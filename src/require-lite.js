@@ -518,6 +518,9 @@ var define, require
 		} else if(nrmId) {
 			url = baseUrl + '/' + nrmId + '.js'
 		}
+		if(_gcfg.resolveUrl) {
+			url = _gcfg.resolveUrl(url)
+		}
 		return url
 	}
 
@@ -573,9 +576,6 @@ var define, require
 		jsNode.type = 'text/javascript'
 		jsNode.async = 'async'
 		loadUrl = _getFullUrl(nrmId, baseUrl)
-		if(_gcfg.resolveUrl) {
-			loadUrl = _gcfg.resolveUrl(loadUrl)
-		}
 		jsNode.src = loadUrl
 		jsNode.setAttribute('data-nrm-id', nrmId)
 		jsNode.setAttribute('data-base-url', baseUrl)
