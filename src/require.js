@@ -1,5 +1,5 @@
 /**
- * YOM module define and require lib 1.0
+ * YOM module define and require lib 1.1
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -135,17 +135,15 @@ var define, require
 		fallbacks: {},//match by id removed prefix
 		shim: {},//match by id removed prefix
 		enforceDefine: false,
-		urlArgs: {//match by id removed prefix
-			'*': ''//for all
-		},
 		//global
 		debug: false,
+		resolveUrl: null,
 		errCallback: null,
 		onLoadStart: null,
 		onLoadEnd: null,
 		waitSeconds: 30
 	}
-	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined)//global config
+	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined)//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
 	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-debug=1') > 0
 	var _interactiveMode = false
@@ -614,10 +612,6 @@ var define, require
 		return url
 	}
 
-	function _getUrlArg(id, urlArgs) {
-		return urlArgs && (urlArgs[_removeIdPrefix(id)] || urlArgs['*']) || ''
-	}
-
 	function _getCharset(id, charset) {
 		if(typeof charset == 'string') {
 			return charset
@@ -682,7 +676,7 @@ var define, require
 	}
 
 	function _doLoad(id, nrmId, config, hold) {
-		var combo, comboUrl, baseUrl, charset, jsNode, urlArg
+		var combo, comboUrl, baseUrl, charset, jsNode, urlArg, loadUrl
 		combo = typeof id == 'object' && id && id.combo && id
 		if(combo) {
 			comboUrl = nrmId
@@ -704,8 +698,11 @@ var define, require
 		}
 		jsNode.type = 'text/javascript'
 		jsNode.async = 'async'
-		urlArg = _getUrlArg(id, config.urlArgs)
-		jsNode.src = (comboUrl || _getFullUrl(nrmId, baseUrl)) + (urlArg ? '?' + urlArg : '')
+		loadUrl = comboUrl || _getFullUrl(nrmId, baseUrl)
+		if(_gcfg.resolveUrl) {
+			loadUrl = _gcfg.resolveUrl(loadUrl)
+		}
+		jsNode.src = loadUrl
 		jsNode.setAttribute('data-nrm-id', nrmId)
 		jsNode.setAttribute('data-base-url', baseUrl)
 		_scriptBeingInserted = jsNode
@@ -858,7 +855,7 @@ var define, require
 		var nrmId, conf, loadHold, hold, depMap
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], baseConfig, config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine'], baseConfig, config)
 		loadHold = _getHold(loadInfo.nrmId, baseUrl)
 		if(combo) {
 			loadInfo.nrmId = combo.load[0].nrmId
@@ -944,7 +941,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine'], context.parentConfig, context.config)
 		function def(id, deps, factory) {
 			var script, factoryStr, reqFnName, defQueue
 			if(typeof id != 'string') {
@@ -982,7 +979,7 @@ var define, require
 			return def
 		}
 		def.config = function(conf) {
-			config = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+			config = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
 			return def
 		}
 		def.extend = function(conf) {
@@ -1062,7 +1059,7 @@ var define, require
 			}
 		}
 		sourceConf = config.source[_getSourceName(id)]
-		conf = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], config, sourceConf)
+		conf = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine'], config, sourceConf)
 		base = context.base
 		nrmId = _normalizeId(id, base, conf.paths)
 		if(_isRelativePath(id)) {
@@ -1088,7 +1085,7 @@ var define, require
 		var config
 		context = context || {}
 		context.parentConfig = context.parentConfig || _gcfg
-		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs'], context.parentConfig, context.config)
+		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine'], context.parentConfig, context.config)
 		function req(deps, callback, errCallback) {
 			var over = false
 			var loadList = []
@@ -1233,7 +1230,7 @@ var define, require
 			return req
 		}
 		req.config = function(conf) {
-			config = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'urlArgs', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+			config = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
 			if(req._ROOT_) {
 				_gcfg = config
 				define.config(conf)
