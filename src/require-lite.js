@@ -317,11 +317,11 @@ var define, require
 					exports = shim.init.apply(global, args) || exports
 				}
 				new Def(nrmId, baseUrl, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)})
+				hold.remove()
 				hold.dispatch(0)
-				hold.remove()
 			}, function(code, opt) {
-				hold.dispatch(code, opt)
 				hold.remove()
+				hold.dispatch(code, opt)
 			})
 			return true
 		},
@@ -599,8 +599,8 @@ var define, require
 				if(fallback) {
 					_doLoad(id, fallback, config, hold)
 				} else {
-					hold.dispatch(_ERR_CODE.NO_DEFINE)
 					hold.remove()
+					hold.dispatch(_ERR_CODE.NO_DEFINE)
 				}
 			}
 		}
@@ -610,8 +610,8 @@ var define, require
 			if(fallback) {
 				_doLoad(id, fallback, config, hold)
 			} else {
-				hold.dispatch(_ERR_CODE.NO_DEFINE)
 				hold.remove()
+				hold.dispatch(_ERR_CODE.NO_DEFINE)
 			}
 		}
 	}
@@ -634,8 +634,8 @@ var define, require
 		if(hold.getShim()) {
 			hold.loadShimDeps(function(errCode) {
 				if(errCode) {
-					hold.dispatch(errCode)
 					hold.remove()
+					hold.dispatch(errCode)
 				} else {
 					_doLoad(id, nrmId, config, hold)
 				}
@@ -723,11 +723,11 @@ var define, require
 			}
 			module.exports = exports
 			new Def(nrmId, baseUrl, exports, module)
+			hold.remove()
 			hold.dispatch(0)
-			hold.remove()
 		}, function(code, opt) {
-			hold.dispatch(code, opt)
 			hold.remove()
+			hold.dispatch(code, opt)
 		})
 	}
 
