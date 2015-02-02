@@ -136,16 +136,14 @@ var define, require
 		shim: {},//match by id removed prefix
 		enforceDefine: false,
 		//global
-		debug: false,
 		resolveUrl: null,
 		errCallback: null,
 		onLoadStart: null,
 		onLoadEnd: null,
 		waitSeconds: 30
 	}
-	var _gcfg = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined)//global config
+	var _gcfg = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined)//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
-	_gcfg.debug = !!_gcfg.debug || location.href.indexOf('yom-debug=1') > 0
 	var _interactiveMode = false
 	var _loadingCount = 0
 	var _scriptBeingInserted = null
@@ -633,13 +631,7 @@ var define, require
 		}
 		jsNode.parentNode.removeChild(jsNode)
 		if(_loadingCount === 0 && _gcfg.onLoadStart) {
-			try {
-				_gcfg.onLoadEnd()
-			} catch(e) {
-				if(_gcfg.debug) {
-					throw e
-				}
-			}
+			_gcfg.onLoadEnd()
 		}
 	}
 
@@ -710,13 +702,7 @@ var define, require
 		_scriptBeingInserted = null
 		_loadingCount++
 		if(_loadingCount === 1 && _gcfg.onLoadStart) {
-			try {
-				_gcfg.onLoadStart()
-			} catch(e) {
-				if(_gcfg.debug) {
-					throw e
-				}
-			}
+			_gcfg.onLoadStart()
 		}
 		function _ieOnload() {
 			var fallback
@@ -979,7 +965,7 @@ var define, require
 			return def
 		}
 		def.config = function(conf) {
-			config = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+			config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
 			return def
 		}
 		def.extend = function(conf) {
@@ -1183,13 +1169,7 @@ var define, require
 					if(context.base) {
 						_dealError(errCode, opt, errCallback)
 					} else {
-						try {
-							_dealError(errCode, opt, errCallback)
-						} catch(e) {
-							if(_gcfg.debug) {
-								throw e
-							}
-						}
+						_dealError(errCode, opt, errCallback)
 					}
 				} else {
 					count--
@@ -1212,17 +1192,7 @@ var define, require
 									}
 								}
 							})
-							if(context.base) {
-								callback.apply(null, callArgs)
-							} else {
-								try {
-									callback.apply(null, callArgs)
-								} catch(e) {
-									if(_gcfg.debug) {
-										throw e
-									}
-								}
-							}
+							callback.apply(null, callArgs)
 						}
 					}
 				}
@@ -1230,7 +1200,7 @@ var define, require
 			return req
 		}
 		req.config = function(conf) {
-			config = _extendConfig(['debug', 'charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+			config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
 			if(req._ROOT_) {
 				_gcfg = config
 				define.config(conf)
