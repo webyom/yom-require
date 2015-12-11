@@ -1,5 +1,5 @@
 /**
- * YOM module define and require lib 1.1
+ * YOM module define and require lib 1.1.1
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -164,7 +164,7 @@ var define, require
 		this._module = module
 		this._getter = getter
 		this._loader = loader
-		_defined[module.uri] = this
+		_defined[module.uri] = _defined[module.uri] || this
 	}
 
 	Def.prototype = {
