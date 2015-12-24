@@ -26,6 +26,7 @@
       "url": "https://github.com/webyom/yom-require/blob/master/LICENSE-MIT"
     }
   ],
+  "main": "src/require.js",
   "devDependencies": {
     "grunt-yomb": "*",
     "grunt-contrib-connect": "~0.5.0",
