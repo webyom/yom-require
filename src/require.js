@@ -1,5 +1,5 @@
 /**
- * YOM module define and require lib 1.1.1
+ * YOM module define and require lib 1.1.2
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -279,12 +279,12 @@ var define, require
 			delete _hold[this._uri]
 		},
 
-		dispatch: function(errCode, opt) {
+		dispatch: function(errCode, errObj, opt) {
 			var callback
 			while(this._queue.length) {
 				callback = this._queue.shift()
 				if(callback) {
-					callback(errCode, opt || {uri: this._uri})
+					callback(errCode, errObj, opt || {uri: this._uri})
 				}
 			}
 		},
@@ -344,7 +344,7 @@ var define, require
 				hold.dispatch(0)
 			}, function(code, opt) {
 				hold.remove()
-				hold.dispatch(code, opt)
+				hold.dispatch(code, null, opt)
 			})
 			return true
 		},
@@ -638,14 +638,16 @@ var define, require
 		}
 	}
 
-	function _dealError(code, opt, errCallback) {
+	function _dealError(errCode, errObj, opt, errCallback) {
 		opt = opt || {}
 		if(errCallback) {
-			errCallback(code, opt)
+			errCallback(errCode, opt)
 		} else if(_gcfg.errCallback) {
-			_gcfg.errCallback(code, opt)
+			_gcfg.errCallback(errCode, opt)
 		} else {
-			if(opt.uri) {
+			if(errObj) {
+				throw errObj
+			} else if(opt.uri) {
 				throw new Error('Failed to load ' + opt.uri)
 			} else {
 				throw new Error('Load Error')
@@ -782,9 +784,9 @@ var define, require
 					hold = new Hold(item.id, item.nrmId, config)
 					comboNeedLoad = true
 				}
-				hold.push(function (err, opt) {
-					if(err) {
-						comboHold.dispatch(err)
+				hold.push(function (errCode, errObj, opt) {
+					if(errCode) {
+						comboHold.dispatch(errCode, errObj, opt)
 					} else {
 						combo.loadCount++
 						if(combo.loadCount === combo.postLoadList.length) {
@@ -892,7 +894,7 @@ var define, require
 	}
 
 	function _postDefineCall(base, deps, factory, hold, config) {
-		_makeRequire({config: config, base: base})(deps, function() {
+		_makeRequire({config: config, base: base})(deps, function constructModule() {
 			var nrmId
 			if(!base.baseUrl && (/^require-plugin\//).test(base.nrmId)) {//require-plugin builtin with html
 				nrmId = _normalizeId(base.nrmId, base, config.paths)
@@ -917,9 +919,7 @@ var define, require
 					exports = factory.apply(null, args) || module.exports
 				} catch(e) {
 					hold.remove()
-					hold.dispatch(_ERR_CODE.DEFINE_FACTORY_ERROR)
-					global && global.console && global.console.error && global.console.error(e.stack)
-					throw e
+					hold.dispatch(_ERR_CODE.DEFINE_FACTORY_ERROR, e)
 				}
 			} else {
 				exports = factory
@@ -930,7 +930,7 @@ var define, require
 			hold.dispatch(0)
 		}, function(code, opt) {
 			hold.remove()
-			hold.dispatch(code, opt)
+			hold.dispatch(code, null, opt)
 		})
 	}
 
@@ -1147,7 +1147,7 @@ var define, require
 							return
 						}
 						over = true
-						_dealError(_ERR_CODE.TIMEOUT, errCallback)
+						_dealError(_ERR_CODE.TIMEOUT, null, {}, errCallback)
 					}, config.waitSeconds * 1000)
 				}
 				_each(loadList, function(item, i) {
@@ -1170,7 +1170,7 @@ var define, require
 			} else {
 				callback && callback.apply(null, callArgs)
 			}
-			function onRequire(errCode, opt) {
+			function onRequire(errCode, errObj, opt) {
 				if(over) {
 					return
 				}
@@ -1178,9 +1178,9 @@ var define, require
 					over = true
 					clearTimeout(toRef)
 					if(context.base) {
-						_dealError(errCode, opt, errCallback)
+						_dealError(errCode, errObj, opt, errCallback)
 					} else {
-						_dealError(errCode, opt, errCallback)
+						_dealError(errCode, errObj, opt, errCallback)
 					}
 				} else {
 					count--
