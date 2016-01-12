@@ -1,5 +1,5 @@
 /**
- * YOM module define and require lib 1.1.2
+ * YOM module define and require lib 1.1.3
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -143,7 +143,7 @@ var define, require
 		onLoadEnd: null,
 		waitSeconds: 30
 	}
-	var _gcfg = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined)//global config
+	var _gcfg = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds', 'deps', 'callback'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined)//global config
 	_gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
 	var _interactiveMode = false
 	var _loadingCount = 0
@@ -1291,6 +1291,9 @@ var define, require
 		}
 		if(!_gcfg.baseUrl) {
 			_gcfg.baseUrl = _PAGE_BASE_URL
+		}
+		if(_gcfg.deps) {
+			require(_gcfg.deps, _gcfg.callback)
 		}
 	})()
 })(this)
