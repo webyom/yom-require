@@ -1,5 +1,5 @@
 /**
- * YOM module define and require lib lite 1.1.3
+ * YOM module define and require lib lite 1.1.4
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -769,14 +769,12 @@ var define, require
 		def.extend = function(conf) {
 			return _makeDefine({config: conf, parentConfig: config})
 		}
+		def.amd = {}
 		return def
 	}
 
 	define = _makeDefine()
 	define._ROOT_ = true
-	define.amd = {
-
-	}
 
 	function _getDep(id, config, context) {
 		var base, conf, nrmId, def, fullUrl, baseFullUrl, loader
