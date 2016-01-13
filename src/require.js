@@ -1,5 +1,5 @@
-/**
- * YOM module define and require lib 1.1.4
+/*!
+ * YOM module define and require lib 1.1.5
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license

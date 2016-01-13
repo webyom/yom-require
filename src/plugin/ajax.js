@@ -1,5 +1,8 @@
-/**
+/*!
  * YOM require ajax plugin
+ * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
+ * Under the MIT license
+ * https://github.com/webyom/yom
  */
 define('require-plugin/ajax', ['global'], function(global) {
 	var _ERROR_OBJ = {}
