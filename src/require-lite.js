@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib lite 1.1.5
+ * YOM module define and require lib lite 1.1.6
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -287,8 +287,8 @@ var define, require
 			if(shim.deps) {
 				_makeRequire({config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function() {
 					callback()
-				}, function(code) {
-					callback(code)
+				}, function(errCode, errObj, opt) {
+					callback(errCode, errObj, opt)
 				})
 			} else {
 				callback()
@@ -320,9 +320,9 @@ var define, require
 				new Def(nrmId, baseUrl, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)})
 				hold.remove()
 				hold.dispatch(0)
-			}, function(code, opt) {
+			}, function(errCode, errObj, opt) {
 				hold.remove()
-				hold.dispatch(code, null, opt)
+				hold.dispatch(errCode, errObj, opt)
 			})
 			return true
 		},
@@ -561,7 +561,7 @@ var define, require
 	}
 
 	function _doLoad(id, nrmId, config, hold) {
-		var baseUrl, charset, jsNode, urlArg, loadUrl
+		var baseUrl, charset, jsNode, loadUrl
 		baseUrl = config.baseUrl
 		charset = _getCharset(id, config.charset)
 		jsNode = document.createElement('script')
@@ -582,7 +582,7 @@ var define, require
 			_gcfg.onLoadStart()
 		}
 		function _onload() {
-			var def, fallback
+			var fallback
 			_endLoad(jsNode, _onload, _onerror)
 			_processDefQueue(nrmId, baseUrl, config)
 			if(!hold.isDefineCalled() && !hold.shimDefine()) {
@@ -608,8 +608,7 @@ var define, require
 	}
 
 	function _load(id, nrmId, config, onRequire) {
-		var baseUrl = config.baseUrl,
-			jsNode, urlArg
+		var baseUrl = config.baseUrl
 		var def, hold
 		def = _getDefined(id, nrmId, config)
 		hold = _getHold(nrmId, baseUrl)
@@ -623,10 +622,10 @@ var define, require
 		hold = new Hold(id, nrmId, config)
 		hold.push(onRequire)
 		if(hold.getShim()) {
-			hold.loadShimDeps(function(errCode) {
+			hold.loadShimDeps(function(errCode, errObj, opt) {
 				if(errCode) {
 					hold.remove()
-					hold.dispatch(errCode)
+					hold.dispatch(errCode, errObj, opt)
 				} else {
 					_doLoad(id, nrmId, config, hold)
 				}
@@ -637,7 +636,7 @@ var define, require
 	}
 
 	function _processDefQueue(nrmId, baseUrl, config) {
-		var def, queue, defQueue, postDefQueue
+		var def, defQueue, postDefQueue
 		defQueue = _defQueue
 		postDefQueue = _postDefQueue
 		def = defQueue.shift()
@@ -660,7 +659,7 @@ var define, require
 	 * define
 	 */
 	function _defineCall(id, deps, factory, loadInfo, config, postDefQueue) {
-		var nrmId, conf, loadHold, hold, depMap
+		var nrmId, loadHold, hold
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
 		config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine'], baseConfig, config)
@@ -696,7 +695,7 @@ var define, require
 		_makeRequire({config: config, base: base})(deps, function() {
 			var nrmId = base.nrmId
 			var baseUrl = base.baseUrl || config.baseUrl
-			var exports, module, factoryRes
+			var exports, module
 			var args = _getArray(arguments)
 			module = {
 				id: nrmId,
@@ -722,9 +721,9 @@ var define, require
 			new Def(nrmId, baseUrl, exports, module)
 			hold.remove()
 			hold.dispatch(0)
-		}, function(code, opt) {
+		}, function(errCode, errObj, opt) {
 			hold.remove()
-			hold.dispatch(code, null, opt)
+			hold.dispatch(errCode, errObj, opt)
 		})
 	}
 
@@ -734,7 +733,7 @@ var define, require
 		context.parentConfig = context.parentConfig || _gcfg
 		config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine'], context.parentConfig, context.config)
 		function def(id, deps, factory) {
-			var script, factoryStr, reqFnName, defQueue
+			var factoryStr, reqFnName, defQueue
 			if(typeof id != 'string') {
 				factory = deps
 				deps = id

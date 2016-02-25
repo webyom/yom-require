@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.1.5
+ * YOM module define and require lib 1.1.6
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -309,8 +309,8 @@ var define, require
 			if(shim.deps) {
 				_makeRequire({config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function() {
 					callback()
-				}, function(code) {
-					callback(code)
+				}, function(errCode, errObj, opt) {
+					callback(errCode, errObj, opt)
 				})
 			} else {
 				callback()
@@ -342,9 +342,9 @@ var define, require
 				new Def(nrmId, baseUrl, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)})
 				hold.remove()
 				hold.dispatch(0)
-			}, function(code, opt) {
+			}, function(errCode, errObj, opt) {
 				hold.remove()
-				hold.dispatch(code, null, opt)
+				hold.dispatch(errCode, errObj, opt)
 			})
 			return true
 		},
@@ -641,9 +641,9 @@ var define, require
 	function _dealError(errCode, errObj, opt, errCallback) {
 		opt = opt || {}
 		if(errCallback) {
-			errCallback(errCode, opt)
+			errCallback(errCode, errObj, opt)
 		} else if(_gcfg.errCallback) {
-			_gcfg.errCallback(errCode, opt)
+			_gcfg.errCallback(errCode, errObj, opt)
 		} else {
 			if(errObj) {
 				throw errObj
@@ -754,8 +754,7 @@ var define, require
 
 	function _load(id, nrmId, config, onRequire) {
 		var combo = typeof id == 'object' && id && id.combo && id,
-			baseUrl = config.baseUrl,
-			jsNode, urlArg
+			baseUrl = config.baseUrl
 		var def, hold, comboUrl, comboHold
 		var comboNeedLoad = false
 		if(combo) {
@@ -799,10 +798,10 @@ var define, require
 			comboNeedLoad && _doLoad(combo, comboUrl, config, hold)
 		} else {
 			if(hold.getShim()) {
-				hold.loadShimDeps(function(errCode) {
+				hold.loadShimDeps(function(errCode, errObj, opt) {
 					if(errCode) {
 						hold.remove()
-						hold.dispatch(errCode)
+						hold.dispatch(errCode, errObj, opt)
 					} else {
 						_doLoad(id, nrmId, config, hold)
 					}
@@ -843,7 +842,7 @@ var define, require
 	 * define
 	 */
 	function _defineCall(id, deps, factory, loadInfo, config, postDefQueue, combo) {
-		var nrmId, conf, loadHold, hold, depMap
+		var nrmId, loadHold, hold
 		var baseUrl = loadInfo.baseUrl
 		var baseConfig = loadInfo.config || config
 		config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine'], baseConfig, config)
@@ -902,7 +901,7 @@ var define, require
 				nrmId = base.nrmId
 			}
 			var baseUrl = base.baseUrl || config.baseUrl
-			var exports, module, factoryRes
+			var exports, module
 			var args = _getArray(arguments)
 			module = {
 				id: nrmId,
@@ -928,9 +927,9 @@ var define, require
 			new Def(nrmId, baseUrl, exports, module)
 			hold.remove()
 			hold.dispatch(0)
-		}, function(code, opt) {
+		}, function(errCode, errObj, opt) {
 			hold.remove()
-			hold.dispatch(code, null, opt)
+			hold.dispatch(errCode, errObj, opt)
 		})
 	}
 
@@ -1013,8 +1012,7 @@ var define, require
 	function _loadCombo(combo, config, context, callback) {
 		var callArgs = combo.combo
 		var baseUrl = config.baseUrl
-		var hold, comboUrl
-		hold = _getHold(combo.nrmId, baseUrl)
+		var hold = _getHold(combo.nrmId, baseUrl)
 		if(hold) {
 			hold.push(onRequire)
 		} else {
@@ -1023,7 +1021,7 @@ var define, require
 		function onRequire(errCode, opt) {
 			if(!errCode) {
 				_each(callArgs, function(arg, i) {
-					var def, plugin
+					var def
 					if(typeof arg == 'undefined') {
 						arg = combo.postLoadList.shift()
 						def = _getDefined(arg.id, arg.nrmId, arg.config)
