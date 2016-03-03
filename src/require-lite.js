@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib lite 1.1.6
+ * YOM module define and require lib lite 1.1.7
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -545,18 +545,19 @@ var define, require
 
 	function _dealError(errCode, errObj, opt, errCallback) {
 		opt = opt || {}
+		if(!errObj) {
+			if(opt.uri) {
+				errObj = new Error('Failed to load ' + opt.uri)
+			} else {
+				errObj = new Error('Load Error')
+			}
+		}
 		if(errCallback) {
 			errCallback(errCode, errObj, opt)
 		} else if(_gcfg.errCallback) {
 			_gcfg.errCallback(errCode, errObj, opt)
 		} else {
-			if(errObj) {
-				throw errObj
-			} else if(opt.uri) {
-				throw new Error('Failed to load ' + opt.uri)
-			} else {
-				throw new Error('Load Error')
-			}
+			throw errObj
 		}
 	}
 
