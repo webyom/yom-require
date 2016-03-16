@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.1.8
+ * YOM module define and require lib 1.1.9
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -107,6 +107,18 @@ var define, require
 			param[key] = val
 		}
 		return param
+	}
+	
+	function _getInterpolateedId(id) {
+		id = id.replace(/\{\{(.+?)\}\}/g, function(full, v) {
+			var res = global
+			v = v.split('.')
+			while(res && v.length) {
+				res = res[v.shift()]
+			}
+			return res || full
+		})
+		return id
 	}
 
 	/**
@@ -955,14 +967,7 @@ var define, require
 				reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require']
 				reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '')
 				factoryStr.replace(new RegExp('(?:^|[^\\.\\/\\w])' + reqFnName + '\\s*\\(\\s*(["\'])([^"\']+?)\\1\\s*\\)', 'g'), function(full, quote, dep) {//extract dependencies
-						dep = dep.replace(/\{\{(.+?)\}\}/g, function(full, v) {
-							var res = global
-							v = v.split('.')
-							while(res && v.length) {
-								res = res[v.shift()]
-							}
-							return res || full
-						})
+						dep = _getInterpolateedId(dep)
 						deps.push(dep)
 					})
 				deps = (factory.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps)
@@ -1093,6 +1098,7 @@ var define, require
 			var loadList = []
 			var def, count, callArgs, toRef
 			if(typeof deps == 'string') {
+				deps = _getInterpolateedId(deps)
 				if(arguments.length === 1) {
 					def = _getDep(deps, config, context)
 					if(def.plugin) {
