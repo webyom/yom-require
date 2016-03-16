@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.1.7
+ * YOM module define and require lib 1.1.8
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -955,6 +955,14 @@ var define, require
 				reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require']
 				reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '')
 				factoryStr.replace(new RegExp('(?:^|[^\\.\\/\\w])' + reqFnName + '\\s*\\(\\s*(["\'])([^"\']+?)\\1\\s*\\)', 'g'), function(full, quote, dep) {//extract dependencies
+						dep = dep.replace(/\{\{(.+?)\}\}/g, function(full, v) {
+							var res = global
+							v = v.split('.')
+							while(res && v.length) {
+								res = res[v.shift()]
+							}
+							return res || full
+						})
 						deps.push(dep)
 					})
 				deps = (factory.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps)
