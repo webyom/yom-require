@@ -1,6 +1,6 @@
 {
   "name": "yom-require",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "An AMD module loader. Its usage is much like RequrieJS, and has particular feature such as CDN combine and source config.",
   "keywords": [
     "amd",

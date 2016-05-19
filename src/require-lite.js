@@ -785,7 +785,7 @@ var define, require
 	define = _makeDefine()
 	define._ROOT_ = true
 
-	function _getDep(id, config, context) {
+	function _getDep(id, config, context, isSyncRequire) {
 		var base, conf, nrmId, def, fullUrl, baseFullUrl, loader
 		if(!id) {
 			return {}
@@ -809,7 +809,7 @@ var define, require
 		fullUrl = _getFullUrl(nrmId, conf.baseUrl)
 		if(base) {
 			baseFullUrl = _getFullUrl(base.nrmId, base.baseUrl)
-			_setDepReverseMap(fullUrl, baseFullUrl)
+			isSyncRequire && _setDepReverseMap(fullUrl, baseFullUrl)
 			if(!def && !_getDefined(base.id, base.nrmId, base.config || conf) && _hasCircularDep(baseFullUrl, fullUrl)) {//cirular dependency
 				return {}
 			}
@@ -833,7 +833,7 @@ var define, require
 			if(typeof deps == 'string') {
 				deps = _getInteractiveDefQueue(deps)
 				if(arguments.length === 1) {
-					def = _getDep(deps, config, context)
+					def = _getDep(deps, config, context, isSyncRequire)
 					return def.inst && def.inst.getDef(context)
 				} else {
 					throw new Error('Wrong arguments for require.')
