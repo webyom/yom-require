@@ -833,7 +833,7 @@ var define, require
 			if(typeof deps == 'string') {
 				deps = _getInteractiveDefQueue(deps)
 				if(arguments.length === 1) {
-					def = _getDep(deps, config, context, isSyncRequire)
+					def = _getDep(deps, config, context, true)
 					return def.inst && def.inst.getDef(context)
 				} else {
 					throw new Error('Wrong arguments for require.')

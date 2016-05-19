@@ -1100,7 +1100,7 @@ var define, require
 			if(typeof deps == 'string') {
 				deps = _getInterpolateedId(deps)
 				if(arguments.length === 1) {
-					def = _getDep(deps, config, context, isSyncRequire)
+					def = _getDep(deps, config, context, true)
 					if(def.plugin) {
 						return def.plugin.require(deps, config)
 					} else {
