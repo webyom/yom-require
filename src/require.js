@@ -319,7 +319,7 @@ var define, require
 			var config = this._config
 			var shim = this._shim
 			if(shim.deps) {
-				_makeRequire({config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function() {
+				_makeRequire({deps: shim.deps, config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function() {
 					callback()
 				}, function(errCode, errObj, opt) {
 					callback(errCode, errObj, opt)
@@ -346,7 +346,8 @@ var define, require
 					return false
 				}
 			}
-			_makeRequire({config: config, base: {id: id, nrmId: nrmId, baseUrl: baseUrl}})(shim && shim.deps || [], function() {
+			var deps = shim && shim.deps || []
+			_makeRequire({deps: deps, config: config, base: {id: id, nrmId: nrmId, baseUrl: baseUrl}})(deps, function() {
 				var args = _getArray(arguments)
 				if(shim && shim.init) {
 					exports = shim.init.apply(global, args) || exports
@@ -906,7 +907,7 @@ var define, require
 	}
 
 	function _postDefineCall(base, deps, factory, hold, config) {
-		_makeRequire({config: config, base: base})(deps, function constructModule() {
+		_makeRequire({deps: deps, config: config, base: base})(deps, function constructModule() {
 			var nrmId
 			if(!base.baseUrl && (/^require-plugin\//).test(base.nrmId)) {//require-plugin builtin with html
 				nrmId = _normalizeId(base.nrmId, base, config.paths)
@@ -1047,7 +1048,7 @@ var define, require
 		}
 	}
 
-	function _getDep(id, config, context, isSyncRequire) {
+	function _getDep(id, config, context) {
 		var base, conf, nrmId, def, pluginName, sourceConf, fullUrl, baseFullUrl, loader
 		if(!id) {
 			return {}
@@ -1076,7 +1077,7 @@ var define, require
 		fullUrl = _getFullUrl(nrmId, conf.baseUrl)
 		if(base) {
 			baseFullUrl = _getFullUrl(base.nrmId, base.baseUrl)
-			isSyncRequire && _setDepReverseMap(fullUrl, baseFullUrl)
+			context.deps && _setDepReverseMap(fullUrl, baseFullUrl)
 			if(!def && !_getDefined(base.id, base.nrmId, base.config || conf) && _hasCircularDep(baseFullUrl, fullUrl)) {//cirular dependency
 				return {}
 			}
@@ -1100,7 +1101,7 @@ var define, require
 			if(typeof deps == 'string') {
 				deps = _getInterpolateedId(deps)
 				if(arguments.length === 1) {
-					def = _getDep(deps, config, context, true)
+					def = _getDep(deps, config, context)
 					if(def.plugin) {
 						return def.plugin.require(deps, config)
 					} else {
