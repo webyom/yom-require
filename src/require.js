@@ -1,9 +1,9 @@
 /*!
- * YOM module define and require lib 1.1.9
+ * YOM module define and require lib 1.1.13
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
- * https://github.com/webyom/yom
+ * https://github.com/webyom/yom-require
  */
 var define, require
 
@@ -293,11 +293,15 @@ var define, require
 
 		dispatch: function(errCode, errObj, opt) {
 			var callback
-			while(this._queue.length) {
-				callback = this._queue.shift()
-				if(callback) {
-					callback(errCode, errObj, opt || {uri: this._uri})
+			if(this._queue.length) {
+				while(this._queue.length) {
+					callback = this._queue.shift()
+					if(callback) {
+						callback(errCode, errObj, opt || {uri: this._uri})
+					}
 				}
+			} else if(errCode) {
+				_dealError(errCode, errObj, opt)
 			}
 		},
 
@@ -1189,11 +1193,7 @@ var define, require
 				if(errCode) {
 					over = true
 					clearTimeout(toRef)
-					if(context.base) {
-						_dealError(errCode, errObj, opt, errCallback)
-					} else {
-						_dealError(errCode, errObj, opt, errCallback)
-					}
+					_dealError(errCode, errObj, opt, errCallback)
 				} else {
 					count--
 					if(count <= 0) {
