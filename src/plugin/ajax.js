@@ -5,11 +5,9 @@
  * https://github.com/webyom/yom
  */
 define('require-plugin/ajax', ['global'], function(global) {
-	var _ERROR_OBJ = {}
-	
 	var _cache = {}
 	var _queue = {}
-	
+
 	function _loadXhr(url, callback, opt) {
 		var xhr
 		try {
@@ -35,20 +33,17 @@ define('require-plugin/ajax', ['global'], function(global) {
 				try {
 					res = eval('(' + xhr.responseText + ')')
 				} catch(e) {
-					if(require.debug) {
-						throw e
-					} else {
-						callback(null, _ERROR_OBJ)
-					}
+					callback(null, require.ERR_CODE.SCRIPT_ERROR, e)
+					return
 				}
 				callback(res)
 			} else {
-				callback(null, _ERROR_OBJ)
+				callback(null, require.ERR_CODE.LOAD_ERROR, null)
 			}
 		}
 		xhr.send()
 	};
-	
+
 	function req(id, config, callback, errCallback) {
 		var url = this._getResource(id)
 		var params, queue
@@ -60,7 +55,7 @@ define('require-plugin/ajax', ['global'], function(global) {
 						_cache[url] = data
 						callback(data)
 					}, function(err, info) {
-						errCallback && errCallback(err, info)
+						errCallback && errCallback(info.errCode, info.errObj, info.opt)
 					})
 				} else {
 					if(!params['noCache'] && _cache[url]) {
@@ -70,11 +65,11 @@ define('require-plugin/ajax', ['global'], function(global) {
 					} else {
 						queue = _queue[url] = _queue[url] || [];
 						queue.push({callback: callback, errCallback: errCallback});
-						_loadXhr(url, function(data, err) {
-							if(err === _ERROR_OBJ) {
+						_loadXhr(url, function(data, errCode, errObj) {
+							if(errCode) {
 								while(queue.length) {
 									errCallback = queue.shift().errCallback
-									errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
+									errCallback && errCallback(errCode, errObj, {uri: url})
 								}
 							} else {
 								_cache[url] = data
@@ -94,7 +89,7 @@ define('require-plugin/ajax', ['global'], function(global) {
 		}
 		return url && _cache[url] || this
 	}
-	
+
 	return {
 		require: req
 	}

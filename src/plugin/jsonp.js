@@ -6,7 +6,7 @@
  */
 define('require-plugin/jsonp', ['global'], function(global) {
 	var _ERROR_OBJ = {}
-	
+
 	var _head = document.head || document.getElementsByTagName('head')[0] || document.documentElement
 	var _isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]'
 	var _callbackHolder = {}
@@ -16,7 +16,7 @@ define('require-plugin/jsonp', ['global'], function(global) {
 	var _cache = {}
 	var _queue = {}
 	var _count = 0
-	
+
 	var CallbackHolder = function(name) {
 		var self = this
 		this._name = name
@@ -25,9 +25,9 @@ define('require-plugin/jsonp', ['global'], function(global) {
 			return self._callback.apply(self, _getArray(arguments))
 		}
 	}
-	
+
 	CallbackHolder.NOT_CALLBACKED = new Object()
-	
+
 	CallbackHolder.prototype._callback = function() {
 		var script, loaderId, callback
 		if(_interactiveMode) {
@@ -43,17 +43,17 @@ define('require-plugin/jsonp', ['global'], function(global) {
 			this._callbackArgs = arguments
 		}
 	}
-	
+
 	CallbackHolder.prototype.getCallbackArgs = function() {
 		var res = this._callbackArgs
 		this._callbackArgs = CallbackHolder.NOT_CALLBACKED
 		return res
 	}
-	
+
 	function _getArray(arr) {
 		return Array.prototype.slice.call(arr)
 	}
-	
+
 	function _getInteractiveScript() {
 		var script, scripts
 		scripts = document.getElementsByTagName('script')
@@ -65,7 +65,7 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		}
 		return script
 	}
-	
+
 	function _clearJsonp(jsEl, callbackName, onload, onerror) {
 		if(jsEl.addEventListener)  {
 			jsEl.removeEventListener('load', onload, false)
@@ -75,7 +75,7 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		}
 		jsEl.parentNode.removeChild(jsEl)
 	}
-	
+
 	function _loadJsonp(url, callback, callbackName, charset) {
 		var id = 'REQUIRE_JSONP_' + (_count++)
 		var callbacked = false
@@ -89,21 +89,21 @@ define('require-plugin/jsonp', ['global'], function(global) {
 			_clearJsonp(jsEl, callbackName, onload, onerror)
 			var callbackArgs = _callbackHolder[callbackName].getCallbackArgs()
 			if(callbackArgs == CallbackHolder.NOT_CALLBACKED) {
-				callback(null, _ERROR_OBJ)
+				callback(null, _ERROR_OBJ, require.ERR_CODE.SCRIPT_ERROR)
 			} else {
 				_callback.apply(null, _getArray(callbackArgs))
 			}
 		}
 		function onerror() {
 			_clearJsonp(jsEl, callbackName, onload, onerror)
-			callback(null, _ERROR_OBJ)
+			callback(null, _ERROR_OBJ, require.ERR_CODE.LOAD_ERROR)
 		}
 		function ieOnload() {
 			if(jsEl && (jsEl.readyState == 'loaded' || jsEl.readyState == 'complete')) {
 				_clearJsonp(jsEl, callbackName, ieOnload)
 				jsEl = null
 				if(!callbacked) {
-					callback(null, _ERROR_OBJ)
+					callback(null, _ERROR_OBJ, require.ERR_CODE.LOAD_ERROR)
 				}
 			}
 		}
@@ -124,7 +124,7 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		jsEl = _head.insertBefore(jsEl, _head.firstChild)
 		_scriptBeingInserted = null
 	}
-	
+
 	function req(id, config, callback, errCallback) {
 		var url = this._getResource(id)
 		var params, callbackName, charset, queue
@@ -140,11 +140,11 @@ define('require-plugin/jsonp', ['global'], function(global) {
 					queue.push({callback: callback, errCallback: errCallback});
 					callbackName = params['callbackName'] || 'callback'
 					charset = params['charset'] || 'utf-8'
-					_loadJsonp(url, function(data, err) {
+					_loadJsonp(url, function(data, err, errCode) {
 						if(err === _ERROR_OBJ) {
 							while(queue.length) {
 								errCallback = queue.shift().errCallback
-								errCallback && errCallback(require.ERR_CODE.LOAD_ERROR, {uri: url})
+								errCallback && errCallback(errCode, null, {uri: url})
 							}
 						} else {
 							_cache[url] = data
@@ -160,7 +160,7 @@ define('require-plugin/jsonp', ['global'], function(global) {
 		}
 		return url && _cache[url] || this
 	}
-	
+
 	return {
 		require: req
 	}

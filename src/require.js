@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.1.13
+ * YOM module define and require lib 1.2.0
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -108,7 +108,7 @@ var define, require
 		}
 		return param
 	}
-	
+
 	function _getInterpolateedId(id) {
 		id = id.replace(/\{\{(.+?)\}\}/g, function(full, v) {
 			var res = global
@@ -133,11 +133,11 @@ var define, require
 		domReady: 1
 	}
 	var _ERR_CODE = {
-		DEFAULT: 1,
-		TIMEOUT: 2,
-		LOAD_ERROR: 3,
-		NO_DEFINE: 4,
-		DEFINE_FACTORY_ERROR: 5
+		DEFAULT: 'others',
+		TIMEOUT: 'timeout',
+		LOAD_ERROR: 'loaderror',
+		NO_DEFINE: 'nodefine',
+		SCRIPT_ERROR: 'scripterror'
 	}
 
 	var _DEFAULT_CONFIG = {
@@ -325,8 +325,8 @@ var define, require
 			if(shim.deps) {
 				_makeRequire({deps: shim.deps, config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function() {
 					callback()
-				}, function(errCode, errObj, opt) {
-					callback(errCode, errObj, opt)
+				}, function(err, info) {
+					callback(info.errCode, info.errObj, info.opt)
 				})
 			} else {
 				callback()
@@ -359,9 +359,9 @@ var define, require
 				new Def(nrmId, baseUrl, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)})
 				hold.remove()
 				hold.dispatch(0)
-			}, function(errCode, errObj, opt) {
+			}, function(err, info) {
 				hold.remove()
-				hold.dispatch(errCode, errObj, opt)
+				hold.dispatch(info.errCode, info.errObj, info.opt)
 			})
 			return true
 		},
@@ -656,6 +656,7 @@ var define, require
 	}
 
 	function _dealError(errCode, errObj, opt, errCallback) {
+		var err, info, requireModule
 		opt = opt || {}
 		if(!errObj) {
 			if(opt.uri) {
@@ -664,10 +665,16 @@ var define, require
 				errObj = new Error('Load Error')
 			}
 		}
+		requireModule = opt.id || opt.nrmId || opt.uri
+		err = {
+			requireType: errCode,
+			requireModules: requireModule ? [requireModule] : null
+		}
+		info = {errCode: errCode, errObj: errObj, opt: opt}
 		if(errCallback) {
-			errCallback(errCode, errObj, opt)
+			errCallback(err, info)
 		} else if(_gcfg.errCallback) {
-			_gcfg.errCallback(errCode, errObj, opt)
+			_gcfg.errCallback(err, info)
 		} else {
 			throw errObj
 		}
@@ -685,16 +692,14 @@ var define, require
 			}
 			plugin.require(id, config, function(res) {
 				onRequire(0)
-			}, function(errCode, opt) {
-				onRequire(errCode, opt)
-			})
-		}, function(errCode, opt) {
-			onRequire(errCode, opt)
+			}, onRequire)
+		}, function(err, info) {
+			onRequire(info.errCode, info.errObj, info.opt)
 		})
 	}
 
 	function _doLoad(id, nrmId, config, hold) {
-		var combo, comboUrl, baseUrl, charset, jsNode, urlArg, loadUrl
+		var combo, comboUrl, baseUrl, charset, jsNode, urlArg, loadUrl, onRequireOpt
 		combo = typeof id == 'object' && id && id.combo && id
 		if(combo) {
 			comboUrl = nrmId
@@ -727,6 +732,7 @@ var define, require
 		if(_loadingCount === 1 && _gcfg.onLoadStart) {
 			_gcfg.onLoadStart()
 		}
+		onRequireOpt = {id: id || nrmId, nrmId: nrmId, uri: loadUrl}
 		function _ieOnload() {
 			var fallback
 			if(jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
@@ -739,7 +745,7 @@ var define, require
 						_doLoad(id, fallback, config, hold)
 					} else {
 						hold.remove()
-						hold.dispatch(_ERR_CODE.NO_DEFINE)
+						hold.dispatch(_ERR_CODE.LOAD_ERROR, null, onRequireOpt)
 					}
 				}
 			}
@@ -754,7 +760,7 @@ var define, require
 					_doLoad(id, fallback, config, hold)
 				} else {
 					hold.remove()
-					hold.dispatch(_ERR_CODE.NO_DEFINE)
+					hold.dispatch(_ERR_CODE.NO_DEFINE, null, onRequireOpt)
 				}
 			}
 		}
@@ -765,7 +771,7 @@ var define, require
 				_doLoad(id, fallback, config, hold)
 			} else {
 				hold.remove()
-				hold.dispatch(_ERR_CODE.NO_DEFINE)
+				hold.dispatch(_ERR_CODE.LOAD_ERROR, null, onRequireOpt)
 			}
 		}
 	}
@@ -921,9 +927,10 @@ var define, require
 			var baseUrl = base.baseUrl || config.baseUrl
 			var exports, module
 			var args = _getArray(arguments)
+			var uri = _getFullUrl(nrmId, baseUrl)
 			module = {
 				id: nrmId,
-				uri: _getFullUrl(nrmId, baseUrl)
+				uri: uri
 			}
 			if(deps[2] == 'module') {
 				args[2] = module
@@ -936,7 +943,7 @@ var define, require
 					exports = factory.apply(null, args) || module.exports
 				} catch(e) {
 					hold.remove()
-					hold.dispatch(_ERR_CODE.DEFINE_FACTORY_ERROR, e)
+					hold.dispatch(_ERR_CODE.SCRIPT_ERROR, e, {id: base.id || nrmId, nrmId: nrmId, uri: uri})
 				}
 			} else {
 				exports = factory
@@ -945,9 +952,9 @@ var define, require
 			new Def(nrmId, baseUrl, exports, module)
 			hold.remove()
 			hold.dispatch(0)
-		}, function(errCode, errObj, opt) {
+		}, function(err, info) {
 			hold.remove()
-			hold.dispatch(errCode, errObj, opt)
+			hold.dispatch(info.errCode, info.errObj, info.opt)
 		})
 	}
 
@@ -1037,7 +1044,7 @@ var define, require
 		} else {
 			_load(combo, _getComboUrl(combo.load, baseUrl), config, onRequire)
 		}
-		function onRequire(errCode, opt) {
+		function onRequire(errCode, errObj, opt) {
 			if(!errCode) {
 				_each(callArgs, function(arg, i) {
 					var def
@@ -1048,7 +1055,7 @@ var define, require
 					}
 				})
 			}
-			callback(errCode, opt)
+			callback(errCode, errObj, opt)
 		}
 	}
 
