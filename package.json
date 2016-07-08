@@ -28,16 +28,5 @@
   ],
   "main": "src/require.js",
   "devDependencies": {
-    "grunt-yomb": "*",
-    "grunt-contrib-connect": "~0.5.0",
-    "grunt-contrib-watch": "~0.5.2",
-    "grunt-contrib-jshint": "~0.6.3",
-    "grunt-karma": "~0.6.2",
-    "karma-mocha": "~0.1.1",
-    "karma-expect": "~1.0.0",
-    "karma-mocha-reporter": "~0.2.0",
-    "karma-safari-launcher": "~0.1.1",
-    "karma-coverage": "~0.1.4",
-    "grunt": "~0.4.1"
   }
 }
