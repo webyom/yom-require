@@ -717,20 +717,21 @@ var define, require
     _makeRequire({deps: deps, config: config, base: base})(deps, function () {
       var nrmId = base.nrmId
       var baseUrl = base.baseUrl || config.baseUrl
-      var exports, module
-      var args = _getArray(arguments)
+      var exports, module, args
       var uri = _getFullUrl(nrmId, baseUrl)
       module = {
         id: nrmId,
         uri: uri
       }
-      if (deps[2] == 'module') {
-        args[2] = module
-      }
       if (_isFunction(factory)) {
-        if (deps[1] == 'exports') {
-          exports = module.exports = args[1] = {}
-        }
+        args = _getArray(arguments)
+        _each(deps, function (dep, i) {
+          if (dep == 'exports') {
+            exports = module.exports = args[i] = exports || {}
+          } else if (dep == 'module') {
+            args[i] = module
+          }
+        })
         try {
           exports = factory.apply(null, args) || module.exports
         } catch (e) {
