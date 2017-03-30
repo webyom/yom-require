@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib lite 1.2.0
+ * YOM module define and require lib lite 1.3.0
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -96,12 +96,16 @@ var define, require
     return param
   }
 
-  function _getInteractiveDefQueue(nrmId, baseUrl) {
-    var fullUrl = _getFullUrl(nrmId, baseUrl) || 'require'
-    _interactiveDefQueue[fullUrl] = _interactiveDefQueue[fullUrl] || {
-      defQueue: [], postDefQueue: []
-    }
-    return _interactiveDefQueue[fullUrl]
+  function _getInterpolatedId(id) {
+    id = id.replace(/\{\{(.+?)\}\}/g, function (full, v) {
+      var res = global
+      v = v.split('.')
+      while (res && v.length) {
+        res = res[v.shift()]
+      }
+      return res || full
+    })
+    return id
   }
 
   /**
@@ -130,6 +134,7 @@ var define, require
     fallbacks: {}, // match by id removed prefix
     shim: {}, // match by id removed prefix
     enforceDefine: false,
+    deepNormalize: false,
     // global
     resolveUrl: null,
     errCallback: null,
@@ -137,7 +142,7 @@ var define, require
     onLoadEnd: null,
     waitSeconds: 30
   }
-  var _gcfg = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds', 'deps', 'callback'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined) // global config
+  var _gcfg = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds', 'deps', 'callback'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined) // global config
   _gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
   var _loadingCount = 0
 
@@ -420,8 +425,8 @@ var define, require
     return (path + '').indexOf('.') === 0
   }
 
-  function _normalizeId(id, base, paths) {
-    var nrmId, a, b, maped
+  function _normalizeId(id, base, config) {
+    var paths, nrmId, a, b, maped
     if (!id) {
       return id
     }
@@ -439,6 +444,7 @@ var define, require
     if (_isRelativePath(nrmId)) {
       return nrmId
     }
+    paths = config.paths
     if (paths) {
       a = nrmId.split('/')
       b = []
@@ -446,7 +452,11 @@ var define, require
         maped = paths[a.join('/')]
         if (maped) {
           b.unshift(_trimTailSlash(maped))
-          return b.join('/')
+          a = b.join('/')
+          if (a != nrmId && config.deepNormalize) {
+            return _normalizeId(a, base, config)
+          }
+          return a
         }
         b.unshift(a.pop())
       }
@@ -684,12 +694,12 @@ var define, require
     var nrmId, loadHold, hold
     var baseUrl = loadInfo.baseUrl
     var baseConfig = loadInfo.config || config
-    config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine'], baseConfig, config)
+    config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], baseConfig, config)
     loadHold = _getHold(loadInfo.nrmId, baseUrl)
     if (id == loadInfo.nrmId) { // html built in module
       nrmId = loadInfo.nrmId
     } else {
-      nrmId = _normalizeId(id, loadInfo, config.paths)
+      nrmId = _normalizeId(id, loadInfo, config)
     }
     if ((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
       nrmId = loadInfo.nrmId
@@ -755,7 +765,7 @@ var define, require
     var config
     context = context || {}
     context.parentConfig = context.parentConfig || _gcfg
-    config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine'], context.parentConfig, context.config)
+    config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], context.parentConfig, context.config)
     function def(id, deps, factory) {
       var factoryStr, reqFnName, defQueue
       if (typeof id != 'string') {
@@ -772,7 +782,7 @@ var define, require
         reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require']
         reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '')
         factoryStr.replace(new RegExp('(?:^|[^\\.\\/\\w])' + reqFnName + '\\s*\\(\\s*(["\'])([^"\']+?)\\1\\s*\\)', 'g'), function (full, quote, dep) { // extract dependencies
-            dep = _getInteractiveDefQueue(dep)
+            dep = _getInterpolatedId(dep)
             deps.push(dep)
           })
         deps = (factory.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps)
@@ -787,7 +797,7 @@ var define, require
       return def
     }
     def.config = function (conf) {
-      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
       return def
     }
     def.extend = function (conf) {
@@ -816,7 +826,7 @@ var define, require
     }
     conf = config
     base = context.base
-    nrmId = _normalizeId(id, base, conf.paths)
+    nrmId = _normalizeId(id, base, conf)
     if (_isRelativePath(id)) {
       conf = base && base.config || conf
     }
@@ -840,13 +850,13 @@ var define, require
     var config
     context = context || {}
     context.parentConfig = context.parentConfig || _gcfg
-    config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine'], context.parentConfig, context.config)
+    config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], context.parentConfig, context.config)
     function req(deps, callback, errCallback) {
       var over = false
       var loadList = []
       var def, count, callArgs, toRef
       if (typeof deps == 'string') {
-        deps = _getInteractiveDefQueue(deps)
+        deps = _getInterpolatedId(deps)
         if (arguments.length === 1) {
           def = _getDep(deps, config, context)
           return def.inst && def.inst.getDef(context)
@@ -922,7 +932,7 @@ var define, require
       return req
     }
     req.config = function (conf) {
-      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
       if (req._ROOT_) {
         _gcfg = config
         define.config(conf)
