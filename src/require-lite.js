@@ -727,7 +727,7 @@ var define, require
     _makeRequire({deps: deps, config: config, base: base})(deps, function () {
       var nrmId = base.nrmId
       var baseUrl = base.baseUrl || config.baseUrl
-      var exports, module, args
+      var exports, module, args, shim
       var uri = _getFullUrl(nrmId, baseUrl)
       module = {
         id: nrmId,
@@ -750,6 +750,10 @@ var define, require
         }
       } else {
         exports = factory
+      }
+      shim = config.shim[_removeIdPrefix(hold._id)]
+      if (shim && shim.exports) {
+        exports = _getShimExports(shim.exports)
       }
       module.exports = exports
       new Def(nrmId, baseUrl, exports, module)
