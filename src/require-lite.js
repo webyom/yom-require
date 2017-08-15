@@ -963,6 +963,9 @@ var define, require
       }
       return url
     }
+    req.getLoadingCount = function () {
+      return _loadingCount
+    }
     req.ERR_CODE = _ERR_CODE
     return req
   }
