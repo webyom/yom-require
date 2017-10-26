@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib lite 1.3.0
+ * YOM module define and require lib lite 1.4.1
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -423,6 +423,10 @@ var define, require
 
   function _isRelativePath(path) {
     return (path + '').indexOf('.') === 0
+  }
+  
+  function _removeIdPrefix(id) {
+    return id.replace(/^([a-zA-Z0-9_\-]+?!)?([a-zA-Z0-9_\-]+?#)?/, '')
   }
 
   function _normalizeId(id, base, config) {
