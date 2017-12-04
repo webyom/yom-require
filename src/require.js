@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.4.1
+ * YOM module define and require lib 1.5.0
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -663,7 +663,7 @@ var define, require
   }
 
   function _dealError(errCode, errObj, opt, errCallback) {
-    var err, info, requireModule
+    var info
     opt = opt || {}
     if (!errObj) {
       if (opt.uri) {
@@ -672,16 +672,15 @@ var define, require
         errObj = new Error('Load Error')
       }
     }
-    requireModule = opt.id || opt.nrmId || opt.uri
-    err = {
-      requireType: errCode,
-      requireModules: requireModule ? [requireModule] : null
+    info = {
+      errCode: errCode,
+      module: opt
     }
-    info = {errCode: errCode, errObj: errObj, opt: opt}
+    errObj.info = info
     if (errCallback) {
-      errCallback(err, info)
+      errCallback(errObj)
     } else if (_gcfg.errCallback) {
-      _gcfg.errCallback(err, info)
+      _gcfg.errCallback(errObj)
     } else {
       throw errObj
     }
@@ -1113,11 +1112,11 @@ var define, require
   }
 
   function _makeRequire(context) {
-    var config
+    var config, req
     context = context || {}
     context.parentConfig = context.parentConfig || _gcfg
     config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], context.parentConfig, context.config)
-    function req(deps, callback, errCallback) {
+    function require(deps, callback, errCallback) {
       var over = false
       var loadList = []
       var def, count, callArgs, toRef
@@ -1239,7 +1238,27 @@ var define, require
           }
         }
       }
-      return req
+      return require
+    }
+    if (global.Promise) {
+      req = function (deps, callback, errCallback) {
+        if (typeof deps == 'string') {
+          return require(deps)
+        } else {
+          return new global.Promise(function (resolve, reject) {
+            require(deps, function () {
+              var res = Array.prototype.slice.call(arguments)
+              resolve(res)
+              callback && callback.apply(null, res)
+            }, function (err) {
+              reject(err)
+              errCallback && errCallback(err)
+            })
+          })
+        }
+      }
+    } else {
+      req = require
     }
     req.config = function (conf) {
       config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
