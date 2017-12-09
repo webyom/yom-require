@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib lite 1.5.0
+ * YOM module define and require lib lite 1.5.1
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -304,8 +304,8 @@ var define, require
       if (shim.deps) {
         _makeRequire({deps: shim.deps, config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function () {
           callback()
-        }, function (err, info) {
-          callback(info.errCode, info.errObj, info.opt)
+        }, function (err) {
+          callback(err.info.errCode, err, err.info.module)
         })
       } else {
         callback()
@@ -338,9 +338,9 @@ var define, require
         new Def(nrmId, baseUrl, exports, {id: nrmId, uri: _getFullUrl(nrmId, baseUrl)})
         hold.remove()
         hold.dispatch(0)
-      }, function (err, info) {
+      }, function (err) {
         hold.remove()
-        hold.dispatch(info.errCode, info.errObj, info.opt)
+        hold.dispatch(err.info.errCode, err, err.info.module)
       })
       return true
     },
@@ -762,9 +762,9 @@ var define, require
       new Def(nrmId, baseUrl, exports, module)
       hold.remove()
       hold.dispatch(0)
-    }, function (err, info) {
+    }, function (err) {
       hold.remove()
-      hold.dispatch(info.errCode, info.errObj, info.opt)
+      hold.dispatch(err.info.errCode, err, err.info.module)
     })
   }
 
