@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.5.1
+ * YOM module define and require lib 1.6.0
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -198,7 +198,7 @@ var define, require
   }
 
   new Def('require', _gcfg.baseUrl, {}, {id: 'require', uri: 'require'}, function (context) {
-    return _makeRequire({config: context.config, base: context.base})
+    return _makeRequire({config: context.base.config, base: context.base})
   })
   new Def('exports', _gcfg.baseUrl, {}, {id: 'exports', uri: 'exports'}, function (context) {
     return {}
@@ -569,7 +569,7 @@ var define, require
       config = _clone(config, 1)
     }
     _each(props, function (p) {
-      config[p] = typeof config[p] == 'object' && typeof ext[p] == 'object' ? _extend(config[p], ext[p]) :
+      config[p] = typeof config[p] == 'object' && typeof ext[p] == 'object' ? _extend(_extend({}, config[p]), ext[p]) :
           typeof ext[p] == 'undefined' ? config[p] : ext[p]
     })
     return config
@@ -923,7 +923,7 @@ var define, require
   }
 
   function _postDefineCall(base, deps, factory, hold, config) {
-    _makeRequire({deps: deps, config: config, base: base})(deps, function constructModule() {
+    _makeRequire({deps: deps, config: base.config || config, base: base})(deps, function constructModule() {
       var nrmId
       if (!base.baseUrl && (/^require-plugin\//).test(base.nrmId)) { // require-plugin builtin with html
         nrmId = _normalizeId(base.nrmId, base, config)
