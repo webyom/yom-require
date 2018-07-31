@@ -422,12 +422,14 @@ var define, require
       shim = config.shim[_removeIdPrefix(id)]
       if (shim && shim.exports) {
         exports = _getShimExports(shim.exports)
-        if (exports) {
+        if (typeof exports != 'undefined') {
           module = {
             id: nrmId,
             uri: _getFullUrl(nrmId, config.baseUrl)
           }
           def = new Def(nrmId, config.baseUrl, exports, module)
+        } else {
+          throw new Error('Can not get exports from shim of ' + id)
         }
       }
     }
