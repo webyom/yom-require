@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib lite 1.6.0
+ * YOM module define and require lib lite 1.7.0
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -415,7 +415,7 @@ var define, require
   }
 
   /**
-   * id start width 'http:', 'https:', '/', or end with '.js' is unnormal
+   * id start width 'http:', 'https:', '/' is unnormal
    */
   function _isUnnormalId(id) {
     return (/^https?:|^\/|\.js$/).test(id)
@@ -429,6 +429,13 @@ var define, require
     return id.replace(/^([a-zA-Z0-9_\-]+?!)?([a-zA-Z0-9_\-]+?#)?/, '')
   }
 
+  function _fixSuffix(url) {
+    if ((/\.js$/i).test(url)) {
+      return url
+    }
+    return url + '.js'
+  }
+
   function _normalizeId(id, base, config) {
     var paths, nrmId, a, b, maped
     if (!id) {
@@ -439,7 +446,7 @@ var define, require
     }
     if (base && _isRelativePath(id)) {
       if (_isUnnormalId(base.nrmId)) {
-        id += '.js'
+        id = _fixSuffix(id)
       }
       return _resolvePath(base.nrmId, id)
     } else {
@@ -542,9 +549,9 @@ var define, require
     if (_RESERVED_NRM_ID[nrmId] || _isUnnormalId(nrmId)) {
       url = nrmId
     } else if (nrmId && _isRelativePath(nrmId)) {
-      url = _resolvePath(baseUrl + '/', nrmId) + '.js'
+      url = _fixSuffix(_resolvePath(baseUrl + '/', nrmId))
     } else if (nrmId) {
-      url = baseUrl + '/' + nrmId + '.js'
+      url = _fixSuffix(baseUrl + '/' + nrmId)
     }
     if (_gcfg.resolveUrl) {
       url = _gcfg.resolveUrl(url)
