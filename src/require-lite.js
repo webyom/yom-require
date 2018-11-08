@@ -137,12 +137,13 @@ var define, require
     deepNormalize: false,
     // global
     resolveUrl: null,
+    resolveExports: null,
     errCallback: null,
     onLoadStart: null,
     onLoadEnd: null,
     waitSeconds: 30
   }
-  var _gcfg = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds', 'deps', 'callback'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined) // global config
+  var _gcfg = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'resolveExports', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds', 'deps', 'callback'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined) // global config
   _gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
   var _loadingCount = 0
 
@@ -765,6 +766,9 @@ var define, require
       if (shim && shim.exports) {
         exports = _getShimExports(shim.exports)
       }
+      if (config.resolveExports) {
+        exports = config.resolveExports(exports, module)
+      }
       module.exports = exports
       new Def(nrmId, baseUrl, exports, module)
       hold.remove()
@@ -811,7 +815,7 @@ var define, require
       return def
     }
     def.config = function (conf) {
-      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'resolveExports', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
       return def
     }
     def.extend = function (conf) {
@@ -966,7 +970,7 @@ var define, require
       req = require
     }
     req.config = function (conf) {
-      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+      config = _extendConfig(['charset', 'baseUrl', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'resolveExports', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
       if (req._ROOT_) {
         _gcfg = config
         define.config(conf)
