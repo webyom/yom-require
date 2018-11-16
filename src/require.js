@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.3
+ * YOM module define and require lib 1.7.4
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -713,13 +713,7 @@ var define, require
   }
 
   function _doLoad(id, nrmId, config, hold) {
-    var combo, comboUrl, baseUrl, charset, jsNode, urlArg, loadUrl, onRequireOpt
-    combo = typeof id == 'object' && id && id.combo && id
-    if (combo) {
-      comboUrl = nrmId
-      id = combo.id
-      nrmId = combo.nrmId
-    }
+    var baseUrl, charset, jsNode, loadUrl, onRequireOpt
     baseUrl = config.baseUrl
     charset = _getCharset(id, config.charset)
     jsNode = document.createElement('script')
@@ -735,7 +729,7 @@ var define, require
     }
     jsNode.type = 'text/javascript'
     jsNode.async = 'async'
-    loadUrl = comboUrl || _getFullUrl(nrmId, baseUrl)
+    loadUrl = _getFullUrl(nrmId, baseUrl)
     jsNode.src = loadUrl
     jsNode.setAttribute('data-nrm-id', nrmId)
     jsNode.setAttribute('data-base-url', baseUrl)
@@ -752,7 +746,7 @@ var define, require
       if (jsNode && (jsNode.readyState == 'loaded' || jsNode.readyState == 'complete')) {
         _endLoad(jsNode, _ieOnload)
         jsNode = null
-        _processDefQueue(nrmId, baseUrl, config, combo)
+        _processDefQueue(nrmId, baseUrl, config)
         if (!hold.isDefineCalled() && !hold.shimDefine()) {
           fallback = hold.getFallback()
           if (fallback) {
@@ -767,7 +761,7 @@ var define, require
     function _onload() {
       var def, fallback
       _endLoad(jsNode, _onload, _onerror)
-      _processDefQueue(nrmId, baseUrl, config, combo)
+      _processDefQueue(nrmId, baseUrl, config)
       if (!hold.isDefineCalled() && !hold.shimDefine()) {
         fallback = hold.getFallback()
         if (fallback) {
@@ -791,19 +785,10 @@ var define, require
   }
 
   function _load(id, nrmId, config, onRequire) {
-    var combo = typeof id == 'object' && id && id.combo && id,
-      baseUrl = config.baseUrl
-    var def, hold, comboUrl, comboHold
-    var comboNeedLoad = false
-    if (combo) {
-      comboUrl = nrmId
-      id = combo.id
-      nrmId = combo.nrmId
-      hold = _getHold(combo.nrmId, baseUrl)
-    } else {
-      def = _getDefined(id, nrmId, config)
-      hold = _getHold(nrmId, baseUrl)
-    }
+    var baseUrl = config.baseUrl
+    var def, hold
+    def = _getDefined(id, nrmId, config)
+    hold = _getHold(nrmId, baseUrl)
     if (def) {
       onRequire(0)
       return
@@ -813,44 +798,21 @@ var define, require
     }
     hold = new Hold(id, nrmId, config)
     hold.push(onRequire)
-    if (combo) {
-      comboHold = hold
-      _each(combo.load, function (item, i) {
-        var hold = _getHold(item.nrmId, baseUrl)
-        if (!hold) {
-          hold = new Hold(item.id, item.nrmId, config)
-          comboNeedLoad = true
+    if (hold.getShim()) {
+      hold.loadShimDeps(function (errCode, errObj, opt) {
+        if (errCode) {
+          hold.remove()
+          hold.dispatch(errCode, errObj, opt)
+        } else {
+          _doLoad(id, nrmId, config, hold)
         }
-        hold.push(function (errCode, errObj, opt) {
-          if (errCode) {
-            comboHold.dispatch(errCode, errObj, opt)
-          } else {
-            combo.loadCount++
-            if (combo.loadCount === combo.postLoadList.length) {
-              comboHold.defineCall()
-              comboHold.dispatch(0)
-            }
-          }
-        })
       })
-      comboNeedLoad && _doLoad(combo, comboUrl, config, hold)
     } else {
-      if (hold.getShim()) {
-        hold.loadShimDeps(function (errCode, errObj, opt) {
-          if (errCode) {
-            hold.remove()
-            hold.dispatch(errCode, errObj, opt)
-          } else {
-            _doLoad(id, nrmId, config, hold)
-          }
-        })
-      } else {
-        _doLoad(id, nrmId, config, hold)
-      }
+      _doLoad(id, nrmId, config, hold)
     }
   }
 
-  function _processDefQueue(nrmId, baseUrl, config, combo) {
+  function _processDefQueue(nrmId, baseUrl, config) {
     var def, queue, defQueue, postDefQueue
     if (_interactiveMode) {
       queue = _getInteractiveDefQueue(nrmId, baseUrl)
@@ -865,7 +827,7 @@ var define, require
       _defineCall(def.id, def.deps, def.factory, {
         nrmId: nrmId || def.id,
         baseUrl: baseUrl || _gcfg.baseUrl
-      }, config || _gcfg, postDefQueue, combo)
+      }, config || _gcfg, postDefQueue)
       def = defQueue.shift()
     }
     def = postDefQueue.shift()
@@ -878,40 +840,22 @@ var define, require
   /**
    * define
    */
-  function _defineCall(id, deps, factory, loadInfo, config, postDefQueue, combo) {
+  function _defineCall(id, deps, factory, loadInfo, config, postDefQueue) {
     var nrmId, loadHold, hold
     var baseUrl = loadInfo.baseUrl
     loadHold = _getHold(loadInfo.nrmId, baseUrl)
-    if (combo) {
-      loadInfo.nrmId = combo.load[0].nrmId
-      nrmId = _normalizeId(id, loadInfo, config)
-      if (!nrmId || nrmId == loadInfo.nrmId) {
-        nrmId = combo.load.shift() // process the first load item
-        combo.postLoadList.push(nrmId) // then push is to the processed list
-        nrmId = nrmId.nrmId
-        hold = _getHold(nrmId, baseUrl)
-        hold.defineCall()
-        if (!combo.load.length) { // all the load items have been loaded
-          loadHold.defineCall()
-        }
-      } else { // multiple define in a file
-        hold = new Hold(id, nrmId, config)
-        hold.defineCall()
-      }
+    if (id == loadInfo.nrmId) { // html built in module
+      nrmId = loadInfo.nrmId
     } else {
-      if (id == loadInfo.nrmId) { // html built in module
-        nrmId = loadInfo.nrmId
-      } else {
-        nrmId = _normalizeId(id, loadInfo, config)
-      }
-      if ((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
-        nrmId = loadInfo.nrmId
-        hold = loadHold
-        hold.defineCall()
-      } else { // multiple define in a file
-        hold = new Hold(id, nrmId, config)
-        hold.defineCall()
-      }
+      nrmId = _normalizeId(id, loadInfo, config)
+    }
+    if ((!nrmId || nrmId == loadInfo.nrmId) && loadHold) {
+      nrmId = loadInfo.nrmId
+      hold = loadHold
+      hold.defineCall()
+    } else { // multiple define in a file
+      hold = new Hold(id, nrmId, config)
+      hold.defineCall()
     }
     postDefQueue.push({
       base: {
@@ -1018,48 +962,6 @@ var define, require
   /**
    * require
    */
-  function _getComboUrl(loadList, baseUrl) {
-    var combo = []
-    var comboUrl
-    var hostName = baseUrl.split('/').slice(0, 3).join('/')
-    _each(loadList, function (item, i) {
-      baseUrl = item.config.baseUrl
-      var hostName = baseUrl.split('/').slice(0, 3).join('/')
-      var base = baseUrl.slice(hostName.length)
-      if (_isUnnormalId(item.nrmId)) {
-        combo.push(base + item.nrmId)
-      } else {
-        combo.push(_fixSuffix(base + '/' + item.nrmId))
-      }
-    })
-    comboUrl = hostName + '/c/=' + combo.join(',')
-    return comboUrl
-  }
-
-  function _loadCombo(combo, config, context, callback) {
-    var callArgs = combo.combo
-    var baseUrl = config.baseUrl
-    var hold = _getHold(combo.nrmId, baseUrl)
-    if (hold) {
-      hold.push(onRequire)
-    } else {
-      _load(combo, _getComboUrl(combo.load, baseUrl), config, onRequire)
-    }
-    function onRequire(errCode, errObj, opt) {
-      if (!errCode) {
-        _each(callArgs, function (arg, i) {
-          var def
-          if (typeof arg == 'undefined') {
-            arg = combo.postLoadList.shift()
-            def = _getDefined(arg.id, arg.nrmId, arg.config)
-            callArgs[i] = def.getDef(context)
-          }
-        })
-      }
-      callback(errCode, errObj, opt)
-    }
-  }
-
   function _getDep(id, config, context) {
     var base, conf, nrmId, def, pluginName, sourceConf, fullUrl, baseFullUrl, loader
     if (!id) {
@@ -1125,42 +1027,13 @@ var define, require
       }
       callArgs = new Array(deps.length)
       _each(deps, function (id, i) {
-        var def, combo, comboIds
-        if (id.indexOf('combine:') === 0) {
-          id = id.replace(/\s+/g, '')
-          comboIds = id.replace(/^combine:/, '').split(',')
-          combo = {
-            id: id,
-            nrmId: id,
-            combo: new Array(comboIds.length), // combo module definitions
-            load: [], // need to be loaded
-            loadCount: 0, // loaded count
-            postLoadList: [] // loaded items
-          }
-          _each(comboIds, function (id, i) {
-            def = _getDep(id, config, context)
-            if (def.load) {
-              combo.load.push(def.load)
-            } else if (def.inst) {
-              combo.combo[i] = def.inst.getDef(context)
-            } else {
-              combo.combo[i] = null
-            }
-          })
-          if (combo.load.length) {
-            loadList.push(combo)
-          } else {
-            callArgs[i] = combo.combo
-          }
+        var def = _getDep(id, config, context)
+        if (def.load) {
+          loadList.push(def.load)
+        } else if (def.inst) {
+          callArgs[i] = def.inst.getDef(context)
         } else {
-          def = _getDep(id, config, context)
-          if (def.load) {
-            loadList.push(def.load)
-          } else if (def.inst) {
-            callArgs[i] = def.inst.getDef(context)
-          } else {
-            callArgs[i] = null
-          }
+          callArgs[i] = null
         }
       })
       count = loadList.length
@@ -1176,9 +1049,7 @@ var define, require
         }
         _each(loadList, function (item, i) {
           var hold
-          if (item.combo) { // combine
-            _loadCombo(item, config, context, onRequire)
-          } else if (item.loader) { // reserved module loader
+          if (item.loader) { // reserved module loader
             item.loader(context, onRequire)
           } else if (item.pluginName) { // plugin
             _loadPlugin(item.pluginName, item.id, item.config, onRequire)
@@ -1212,9 +1083,7 @@ var define, require
                 var def, plugin
                 if (typeof arg == 'undefined') {
                   arg = loadList.shift()
-                  if (arg.combo) { // combine
-                    callArgs[i] = arg.combo
-                  } else if (arg.pluginName) { // plugin
+                  if (arg.pluginName) { // plugin
                     plugin = _getPlugin(arg.pluginName)
                     callArgs[i] = plugin.require(arg.id, config)
                   } else {
