@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.0
+ * YOM module define and require lib 1.7.2
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -864,14 +864,13 @@ var define, require
     while (def) {
       _defineCall(def.id, def.deps, def.factory, {
         nrmId: nrmId || def.id,
-        baseUrl: baseUrl || def.config && def.config.baseUrl || config && config.baseUrl || _gcfg.baseUrl,
-        config: config
-      }, def.config, postDefQueue, combo)
+        baseUrl: baseUrl || _gcfg.baseUrl
+      }, config, postDefQueue, combo)
       def = defQueue.shift()
     }
     def = postDefQueue.shift()
     while (def) {
-      _postDefineCall(def.base, def.deps, def.factory, def.hold, def.config)
+      _postDefineCall(def.base, def.deps, def.factory, def.hold, config)
       def = postDefQueue.shift()
     }
   }
@@ -882,8 +881,6 @@ var define, require
   function _defineCall(id, deps, factory, loadInfo, config, postDefQueue, combo) {
     var nrmId, loadHold, hold
     var baseUrl = loadInfo.baseUrl
-    var baseConfig = loadInfo.config || config
-    config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], baseConfig, config)
     loadHold = _getHold(loadInfo.nrmId, baseUrl)
     if (combo) {
       loadInfo.nrmId = combo.load[0].nrmId
@@ -898,7 +895,7 @@ var define, require
           loadHold.defineCall()
         }
       } else { // multiple define in a file
-        hold = new Hold(id, nrmId, baseConfig)
+        hold = new Hold(id, nrmId, config)
         hold.defineCall()
       }
     } else {
@@ -912,7 +909,7 @@ var define, require
         hold = loadHold
         hold.defineCall()
       } else { // multiple define in a file
-        hold = new Hold(id, nrmId, baseConfig)
+        hold = new Hold(id, nrmId, config)
         hold.defineCall()
       }
     }
@@ -921,17 +918,16 @@ var define, require
         id: id,
         nrmId: nrmId,
         baseUrl: baseUrl,
-        config: baseConfig
+        config: config
       },
       deps: deps,
       factory: factory,
-      hold: hold,
-      config: config
+      hold: hold
     })
   }
 
   function _postDefineCall(base, deps, factory, hold, config) {
-    _makeRequire({deps: deps, config: base.config || config, base: base})(deps, function constructModule() {
+    _makeRequire({deps: deps, config: config, base: base})(deps, function constructModule() {
       var nrmId
       if (!base.baseUrl && (/^require-plugin\//).test(base.nrmId)) { // require-plugin builtin with html
         nrmId = _normalizeId(base.nrmId, base, config)
@@ -980,61 +976,44 @@ var define, require
     })
   }
 
-  function _makeDefine(context) {
-    var config
-    context = context || {}
-    context.parentConfig = context.parentConfig || _gcfg
-    config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], context.parentConfig, context.config)
-    function def(id, deps, factory) {
-      var script, factoryStr, reqFnName, defQueue
-      if (typeof id != 'string') {
-        factory = deps
-        deps = id
-        id = ''
-      }
-      if (typeof factory == 'undefined' || !_isArray(deps)) {
-        factory = deps
-        deps = []
-      }
-      if (!deps.length && _isFunction(factory) && factory.length) {
-        factoryStr = factory.toString()
-        reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require']
-        reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '')
-        factoryStr.replace(new RegExp('(?:^|[^\\.\\/\\w])' + reqFnName + '\\s*\\(\\s*(["\'])([^"\']+?)\\1\\s*\\)', 'g'), function (full, quote, dep) { // extract dependencies
-            dep = _getInterpolatedId(dep)
-            deps.push(dep)
-          })
-        deps = (factory.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps)
-      }
-      if (_interactiveMode) {
-        script = _scriptBeingInserted || _getInteractiveScript()
-        if (script) {
-          defQueue = _getInteractiveDefQueue(script.getAttribute('data-nrm-id'), script.getAttribute('data-base-url'))['defQueue']
-        }
-      } else {
-        defQueue = _defQueue
-      }
-      defQueue.push({
-        id: id,
-        deps: deps,
-        factory: factory,
-        config: config
-      })
-      return def
+  define = function define(id, deps, factory) {
+    var script, factoryStr, reqFnName, defQueue
+    if (typeof id != 'string') {
+      factory = deps
+      deps = id
+      id = ''
     }
-    def.config = function (conf) {
-      config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'resolveExports', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
-      return def
+    if (typeof factory == 'undefined' || !_isArray(deps)) {
+      factory = deps
+      deps = []
     }
-    def.extend = function (conf) {
-      return _makeDefine({config: conf, parentConfig: config})
+    if (!deps.length && _isFunction(factory) && factory.length) {
+      factoryStr = factory.toString()
+      reqFnName = factoryStr.match(/^function[^\(]*\(([^\)]+)\)/) || ['', 'require']
+      reqFnName = (reqFnName[1].split(',')[0]).replace(/\s/g, '')
+      factoryStr.replace(new RegExp('(?:^|[^\\.\\/\\w])' + reqFnName + '\\s*\\(\\s*(["\'])([^"\']+?)\\1\\s*\\)', 'g'), function (full, quote, dep) { // extract dependencies
+          dep = _getInterpolatedId(dep)
+          deps.push(dep)
+        })
+      deps = (factory.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps)
     }
-    def.amd = {}
-    return def
+    if (_interactiveMode) {
+      script = _scriptBeingInserted || _getInteractiveScript()
+      if (script) {
+        defQueue = _getInteractiveDefQueue(script.getAttribute('data-nrm-id'), script.getAttribute('data-base-url'))['defQueue']
+      }
+    } else {
+      defQueue = _defQueue
+    }
+    defQueue.push({
+      id: id,
+      deps: deps,
+      factory: factory
+    })
+    return define
   }
 
-  define = _makeDefine()
-  define._ROOT_ = true
+  define.amd = {}
 
   /**
    * require
