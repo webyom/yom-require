@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.2
+ * YOM module define and require lib 1.7.3
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -865,12 +865,12 @@ var define, require
       _defineCall(def.id, def.deps, def.factory, {
         nrmId: nrmId || def.id,
         baseUrl: baseUrl || _gcfg.baseUrl
-      }, config, postDefQueue, combo)
+      }, config || _gcfg, postDefQueue, combo)
       def = defQueue.shift()
     }
     def = postDefQueue.shift()
     while (def) {
-      _postDefineCall(def.base, def.deps, def.factory, def.hold, config)
+      _postDefineCall(def.base, def.deps, def.factory, def.hold, config || _gcfg)
       def = postDefQueue.shift()
     }
   }
