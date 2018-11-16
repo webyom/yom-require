@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.4
+ * YOM module define and require lib 1.7.5
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -156,9 +156,19 @@ var define, require
     errCallback: null,
     onLoadStart: null,
     onLoadEnd: null,
-    waitSeconds: 30
+    waitSeconds: 30,
+    deps: null,
+    callback: null
   }
-  var _gcfg = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'resolveExports', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds', 'deps', 'callback'], _clone(_DEFAULT_CONFIG, 1), typeof require == 'object' ? require : undefined) // global config
+  var _CONFIG_PROPS = (function () {
+    var props = []
+    var p
+    for (p in _DEFAULT_CONFIG) {
+      props.push(p)
+    }
+    return props
+  })()
+  var _gcfg = _extendConfig(_DEFAULT_CONFIG, typeof require == 'object' ? require : undefined) // global config
   _gcfg.baseUrl = _getFullBaseUrl(_gcfg.baseUrl)
   var _interactiveMode = false
   var _loadingCount = 0
@@ -564,7 +574,8 @@ var define, require
     return nrmId
   }
 
-  function _extendConfig(props, config, ext) {
+  function _extendConfig(config, ext, props) {
+    props = props || _CONFIG_PROPS
     if (!config) {
       return ext
     } else if (!ext || config == ext || (props.length === 1 && props[0] == 'baseUrl' && config.baseUrl == ext.baseUrl)) {
@@ -981,7 +992,7 @@ var define, require
       }
     }
     sourceConf = config.source[_getSourceName(id)]
-    conf = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], config, sourceConf)
+    conf = _extendConfig(config, sourceConf)
     base = context.base
     nrmId = _normalizeId(id, base, conf)
     if (_isRelativePath(id)) {
@@ -1007,7 +1018,7 @@ var define, require
     var config, req
     context = context || {}
     context.parentConfig = context.parentConfig || _gcfg
-    config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize'], context.parentConfig, context.config)
+    config = _extendConfig(context.parentConfig, context.config)
     function require(deps, callback, errCallback) {
       var over = false
       var loadList = []
@@ -1120,10 +1131,9 @@ var define, require
       req = require
     }
     req.config = function (conf) {
-      config = _extendConfig(['charset', 'baseUrl', 'source', 'paths', 'fallbacks', 'shim', 'enforceDefine', 'deepNormalize', 'resolveUrl', 'resolveExports', 'errCallback', 'onLoadStart', 'onLoadEnd', 'waitSeconds'], config, conf)
+      config = _extendConfig(config, conf)
       if (req._ROOT_) {
         _gcfg = config
-        define.config(conf)
       }
       return req
     }
@@ -1163,7 +1173,7 @@ var define, require
   require.processDefQueue = _processDefQueue
   // for modules built with require.js or html builtin
   require.getBaseUrlConfig = function (baseUrl) {
-    return _extendConfig(['baseUrl'], _gcfg, {baseUrl: baseUrl || _PAGE_BASE_URL})
+    return _extendConfig(_gcfg, {baseUrl: baseUrl || _PAGE_BASE_URL}, ['baseUrl'])
   }
   // debug
   require._debug = {
