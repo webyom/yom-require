@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.5
+ * YOM module define and require lib 1.7.6
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -528,8 +528,12 @@ var define, require
   }
 
   function _fixSuffix(url) {
-    if ((/\.js$/i).test(url)) {
+    if ((/\.js$|\.js\?.*$/i).test(url)) {
       return url
+    }
+    var i = url.indexOf('?')
+    if (i > 0) {
+      return url.slice(0, i) + '.js' + url.slice(i)
     }
     return url + '.js'
   }
