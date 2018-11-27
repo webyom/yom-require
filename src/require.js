@@ -920,7 +920,10 @@ var define, require
       }
       shim = config.shim[_removeIdPrefix(hold._id)]
       if (shim && shim.exports) {
-        exports = _getShimExports(shim.exports)
+        var shimExports = _getShimExports(shim.exports)
+        if (typeof shimExports != 'undefined') {
+          exports = shimExports
+        }
       }
       if (config.resolveExports) {
         exports = config.resolveExports(exports, module)
