@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.7
+ * YOM module define and require lib 1.7.8
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -277,6 +277,7 @@ var define, require
     this._baseUrl = baseUrl
     this._config = config
     this._defineCalled = false
+    this._dispatched = false
     this._queue = []
     this._fallbacks = config.fallbacks[noPrefixId]
     this._shim = config.shim[noPrefixId]
@@ -300,12 +301,17 @@ var define, require
       return this._defineCalled
     },
 
+    isDispatched: function () {
+      return this._dispatched
+    },
+
     remove: function () {
       delete _hold[this._uri]
     },
 
     dispatch: function (errCode, errObj, opt) {
       var callback
+      this._dispatched = true
       if (this._queue.length) {
         while (this._queue.length) {
           callback = this._queue.shift()
@@ -336,7 +342,7 @@ var define, require
       var config = this._config
       var shim = this._shim
       if (shim.deps) {
-        _makeRequire({deps: shim.deps, config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function () {
+        _makeRequire({deps: shim.exports && shim.deps, config: config, base: {id: id, nrmId: nrmId, baseUrl: this._baseUrl}})(shim.deps, function () {
           callback()
         }, function (err) {
           callback(err.info.errCode, err, err.info.module)
@@ -801,7 +807,7 @@ var define, require
 
   function _load(id, nrmId, config, onRequire) {
     var baseUrl = config.baseUrl
-    var def, hold
+    var def, hold, shim
     def = _getDefined(id, nrmId, config)
     hold = _getHold(nrmId, baseUrl)
     if (def) {
@@ -812,17 +818,39 @@ var define, require
       return
     }
     hold = new Hold(id, nrmId, config)
-    hold.push(onRequire)
-    if (hold.getShim()) {
-      hold.loadShimDeps(function (errCode, errObj, opt) {
-        if (errCode) {
-          hold.remove()
-          hold.dispatch(errCode, errObj, opt)
-        } else {
-          _doLoad(id, nrmId, config, hold)
-        }
-      })
+    shim = hold.getShim()
+    if (shim) {
+      // if shim has no exports, it does not really depends on shim.deps
+      // maybe shim.deps will inject data into it, such as locales
+      if (shim.exports) {
+        hold.push(onRequire)
+        hold.loadShimDeps(function (errCode, errObj, opt) {
+          if (errCode) {
+            hold.remove()
+            hold.dispatch(errCode, errObj, opt)
+          } else {
+            _doLoad(id, nrmId, config, hold)
+          }
+        })
+      } else {
+        _doLoad(id, nrmId, config, hold)
+        hold.loadShimDeps(function (errCode, errObj, opt) {
+          if (errCode) {
+            hold.remove()
+            hold.dispatch(errCode, errObj, opt)
+          } else {
+            // delay this initial require callback
+            // make sure shim.deps in the head of dispatch queue
+            // TODO: this may cause subsequent irrelevant require callbacked first 
+            hold.push(onRequire)
+            if (hold.isDispatched()) {
+              hold.dispatch(0)
+            }
+          }
+        })
+      }
     } else {
+      hold.push(onRequire)
       _doLoad(id, nrmId, config, hold)
     }
   }
