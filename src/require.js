@@ -1,5 +1,5 @@
 /*!
- * YOM module define and require lib 1.7.8
+ * YOM module define and require lib 2.0.0
  * Inspired by RequireJS AMD spec
  * Copyright (c) 2012 Gary Wang, webyom@gmail.com http://webyom.org
  * Under the MIT license
@@ -954,12 +954,18 @@ var define, require
         }
       }
       if (config.resolveExports) {
-        exports = config.resolveExports(exports, module)
+        config.resolveExports(exports, module, function (exports) {
+          module.exports = exports
+          new Def(nrmId, baseUrl, exports, module)
+          hold.remove()
+          hold.dispatch(0)
+        })
+      } else {
+        module.exports = exports
+        new Def(nrmId, baseUrl, exports, module)
+        hold.remove()
+        hold.dispatch(0)
       }
-      module.exports = exports
-      new Def(nrmId, baseUrl, exports, module)
-      hold.remove()
-      hold.dispatch(0)
     }, function (err) {
       hold.remove()
       hold.dispatch(err.info.errCode, err, err.info.module)
