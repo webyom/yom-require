@@ -653,7 +653,7 @@ var define, require
     return url
   }
 
-  function _getFullUrl(nrmId, baseUrl) {
+  function _getFullUrl(nrmId, baseUrl, usage) {
     var url = ''
     baseUrl = baseUrl || _gcfg.baseUrl
     if (_RESERVED_NRM_ID[nrmId] || _isUnnormalId(nrmId)) {
@@ -664,7 +664,7 @@ var define, require
       url = _fixSuffix(baseUrl + '/' + nrmId)
     }
     if (_gcfg.resolveUrl) {
-      url = _gcfg.resolveUrl(url)
+      url = _gcfg.resolveUrl(url, usage)
     }
     return url
   }
@@ -750,7 +750,7 @@ var define, require
     }
     jsNode.type = 'text/javascript'
     jsNode.async = 'async'
-    loadUrl = _getFullUrl(nrmId, baseUrl)
+    loadUrl = _getFullUrl(nrmId, baseUrl, 'LOAD')
     jsNode.src = loadUrl
     jsNode.setAttribute('data-nrm-id', nrmId)
     jsNode.setAttribute('data-base-url', baseUrl)
